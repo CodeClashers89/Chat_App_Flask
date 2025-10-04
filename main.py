@@ -280,7 +280,7 @@ def get_private_messages(other_user):
         })
     
     return jsonify({"messages": message_list})
-# Add this route to main.py
+
 @app.route("/get_group_chat_users")
 def get_group_chat_users():
     if "username" not in session:
@@ -390,7 +390,7 @@ def handle_private_message(data):
     print(f"Private message from {sender} to {receiver}: {msg_text}")
     
     if sender and receiver and msg_text:
-        # Save to database (messages to offline users are also saved)
+        # Save to database
         pm = PrivateMessage(sender=sender, receiver=receiver, content=msg_text)
         db.session.add(pm)
         db.session.commit()
@@ -403,17 +403,17 @@ def handle_private_message(data):
             "message_id": pm.id
         }
         
-        # Send to sender (always)
+        # Send only to the sender and receiver
         if sender in connected_users:
             for sid in connected_users[sender]:
                 emit("new_private_message", payload, room=sid)
         
-        # Send to receiver if online
-        if receiver in connected_users:
+        # Send to receiver if online (and different from sender)
+        if receiver in connected_users and receiver != sender:
             for sid in connected_users[receiver]:
                 emit("new_private_message", payload, room=sid)
         
-        print(f"Private message saved and delivered. Sender: {sender}, Receiver: {receiver}")
+        print(f"Private message saved. Sender: {sender}, Receiver: {receiver}")
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5001))

@@ -584,7 +584,8 @@
           msg: message
         });
         
-        addMessageToChat(currentUser, message, true);
+        // Only add to chat if not already added by the server response
+        // This prevents duplicate messages
         input.value = '';
       }
     }
@@ -616,6 +617,16 @@
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    // Show notification for new messages
+    function showNotification(sender, message) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(`New message from ${sender}`, {
+            body: message.length > 50 ? message.substring(0, 50) + '...' : message,
+            icon: '/static/logo.png'
+        });
+      }
+    }
+
     // Socket event handlers
     socket.on('private_chat_users', function(data) {
       allUsers = data.all_users || [];
@@ -629,8 +640,18 @@
     });
 
     socket.on('new_private_message', function(data) {
-      if (data.sender === selectedUser || (data.receiver === selectedUser && data.sender === currentUser)) {
-        addMessageToChat(data.sender, data.msg, data.sender === currentUser);
+      // Only display if this message is relevant to the current chat
+      const isMessageForCurrentChat = 
+          (data.sender === selectedUser && data.receiver === currentUser) || 
+          (data.receiver === selectedUser && data.sender === currentUser);
+      
+      if (isMessageForCurrentChat) {
+          addMessageToChat(data.sender, data.msg, data.sender === currentUser);
+      }
+      
+      // Show notification for new messages not in current chat
+      else if (data.receiver === currentUser && data.sender !== selectedUser) {
+          showNotification(data.sender, data.msg);
       }
     });
 
@@ -646,6 +667,11 @@
     // Load users when page loads
     document.addEventListener('DOMContentLoaded', function() {
       loadAllUsers();
+      
+      // Request notification permission
+      if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission();
+      }
     });
   </script>
 </body>
