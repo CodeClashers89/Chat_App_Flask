@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Clasher - Chat Selection</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-color: #0a0a0a;
+      --text-color: #ffffff;
+      --accent-color: #ff2a00;
+      --border-color: #222;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Orbitron', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+      padding-top: 80px;
+      padding-bottom: 40px;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(255, 42, 0, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 42, 0, 0.1) 0%, transparent 50%);
+      animation: pulse 4s ease-in-out infinite;
+      z-index: 0;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .navbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 0;
+      z-index: 100;
+    }
+
+    .navbar-brand {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: var(--text-color);
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--accent-color);
+      color: var(--accent-color);
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-logout:hover {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    /* Logo container with image and text */
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      margin-top: 1rem;
+      animation: float 3s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+
+    /* Circular glowing logo */
+    .logo-image {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 4px solid var(--accent-color);
+      margin-bottom: 0.8rem;
+      filter: drop-shadow(0 0 20px rgba(255, 42, 0, 0.4));
+      transition: all 0.4s ease;
+      object-fit: cover;
+    }
+
+    .logo-container:hover .logo-image {
+      transform: scale(1.1);
+      filter: drop-shadow(0 0 50px rgba(255, 42, 0, 0.8));
+    }
+
+    /* Floating logo text */
+    .logo-text {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-align: center;
+      background: linear-gradient(90deg, #ffffff, var(--accent-color), #ffffff);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shine 3s linear infinite;
+      transition: transform 0.4s ease, text-shadow 0.4s ease;
+    }
+
+    .logo-container:hover .logo-text {
+      transform: scale(1.1);
+      text-shadow: 0 0 25px rgba(255, 42, 0, 0.7);
+    }
+
+    @keyframes shine {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #888;
+      margin-bottom: 2rem;
+      font-weight: 400;
+    }
+
+    /* Button styling */
+    .chat-option-container {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .chat-card {
+      background: rgba(26, 26, 26, 0.8);
+      border: 2px solid var(--border-color);
+      border-radius: 18px;
+      padding: 20px 25px;
+      width: 340px;
+      min-height: 280px;
+      transition: all 0.3s ease-in-out;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 42, 0, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .chat-card:hover::before {
+      left: 100%;
+    }
+
+    .chat-card:hover {
+      border-color: var(--accent-color);
+      box-shadow: 0 8px 32px rgba(255, 42, 0, 0.3);
+      transform: translateY(-10px) scale(1.02);
+    }
+
+    .chat-icon {
+      font-size: 3rem;
+      color: var(--accent-color);
+      margin-bottom: 1rem;
+      animation: iconFloat 2s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .chat-card:nth-child(2) .chat-icon {
+      animation-delay: 0.3s;
+    }
+
+    .chat-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      color: var(--text-color);
+    }
+
+    .chat-description {
+      color: #888;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      font-weight: 400;
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem;
+      text-align: left;
+    }
+
+    .feature-list li {
+      color: #aaa;
+      font-size: 0.8rem;
+      margin-bottom: 0.4rem;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      .logo-image {
+        width: 150px;
+        height: 150px;
+      }
+
+      .logo-text {
+        font-size: 1.8rem;
+      }
+      
+      .chat-card {
+        width: 100%;
+        max-width: 300px;
+      }
+      
+      .chat-option-container {
+        padding: 0 20px;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="/chat">
+        <i class="fas fa-code me-2"></i>CODE CLASHER
+      </a>
+      <div class="d-flex align-items-center">
+        <span style="margin-right: 20px; font-size: 1.1rem;">Welcome, {{ username }}</span>
+        <a href="/logout" class="btn-logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="content">
+    <!-- Logo Container with Image and Floating Text -->
+    <div class="logo-container">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Code Clasher Logo" class="logo-image">
+      <div class="logo-text">CODE CLASHER</div>
+    </div>
+    
+    <p class="subtitle">Choose your communication style</p>
+
+    <!-- Chat Options -->
+    <div class="chat-option-container">
+      <div class="chat-card" onclick="window.location.href='/group-chat'">
+        <div class="chat-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="chat-title">Group Chat</div>
+        <div class="chat-description">
+          Join the community conversation and connect with all developers in one room
+        </div>
+        <ul class="feature-list">
+          <li>Public chat room</li>
+          <li>Real-time messaging</li>
+          <li>See all online users</li>
+          <li>Share with everyone</li>
+        </ul>
+      </div>
+
+      <div class="chat-card" onclick="window.location.href='/private-chat'">
+        <div class="chat-icon">
+          <i class="fas fa-lock"></i>
+        </div>
+        <div class="chat-title">Private Chats</div>
+        <div class="chat-description">
+          Have one-on-one conversations with individual developers privately
+        </div>
+        <ul class="feature-list">
+          <li>Direct messaging</li>
+          <li>Private conversations</li>
+          <li>Message notifications</li>
+          <li>Chat history saved</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
