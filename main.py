@@ -15,7 +15,7 @@ app.config['SECRET_KEY'] = "secret123"
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///chat.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # Gmail SMTP Settings - UPDATE THESE WITH YOUR CREDENTIALS
 SMTP_SERVER = "smtp.gmail.com"
