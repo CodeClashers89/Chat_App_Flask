@@ -490,6 +490,11 @@
 
     // Select user for private chat
     function selectUser(username, isOnline) {
+      // If clicking the same user, do nothing
+      if (selectedUser === username) {
+        return;
+      }
+      
       selectedUser = username;
       selectedUserOnline = isOnline;
       
@@ -510,7 +515,11 @@
       document.getElementById('noChatSelected').style.display = 'none';
       document.getElementById('chatInput').style.display = 'flex';
       
-      // Load chat history
+      // Clear the current messages and load chat history for the new user
+      const messagesContainer = document.getElementById('messages');
+      messagesContainer.innerHTML = '<div class="no-chat-selected"><i class="fas fa-spinner fa-spin"></i><h4>Loading messages...</h4></div>';
+      
+      // Load chat history for the newly selected user
       loadChatHistory(username);
       
       // Focus on input
@@ -567,6 +576,14 @@
         })
         .catch(error => {
           console.error('Error loading chat history:', error);
+          const messagesContainer = document.getElementById('messages');
+          messagesContainer.innerHTML = `
+            <div class="no-chat-selected">
+              <i class="fas fa-exclamation-triangle"></i>
+              <h4>Error loading messages</h4>
+              <p>Please try again</p>
+            </div>
+          `;
         });
     }
 
