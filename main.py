@@ -20,8 +20,8 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 # Gmail SMTP Settings - UPDATE THESE WITH YOUR CREDENTIALS
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_ADDRESS = "kamanipoojan@gmail.com"
-EMAIL_PASSWORD = "kcsyjbnqkxznpbgzb"
+EMAIL_ADDRESS = "clasherscode6@gmail.com"
+EMAIL_PASSWORD = "kknjhlkslpsdkmgl"
 
 # Database Models
 class Message(db.Model):
