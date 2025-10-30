@@ -20,8 +20,8 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 # Gmail SMTP Settings - UPDATE THESE WITH YOUR CREDENTIALS
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_ADDRESS = "clasherscode6@gmail.com"
-EMAIL_PASSWORD = "kknjhlkslpsdkmgl"
+EMAIL_ADDRESS = "kamanipoojan@gmail.com"
+EMAIL_PASSWORD = "kcsyjbnqkxznpbgzb"
 
 # Database Models
 class Message(db.Model):
@@ -262,6 +262,7 @@ def get_private_messages(other_user):
         return jsonify({"error": "Not authenticated"}), 401
     
     current_user = session["username"]
+    print(f"Fetching private messages between {current_user} and {other_user}")
     
     # Get messages between current user and other user
     messages = PrivateMessage.query.filter(
@@ -279,6 +280,7 @@ def get_private_messages(other_user):
             "is_sent": msg.sender == current_user
         })
     
+    print(f"Returning {len(message_list)} messages")
     return jsonify({"messages": message_list})
 
 @app.route("/get_group_chat_users")
@@ -298,6 +300,19 @@ def get_group_chat_users():
 
 @app.route("/logout")
 def logout():
+    if "username" in session:
+        username = session["username"]
+        # Remove user from connected users
+        if username in connected_users:
+            connected_users.pop(username, None)
+            print(f"User {username} logged out. Online users: {list(connected_users.keys())}")
+            
+            # Broadcast updated user list to all clients
+            socketio.emit('user_list_update', {
+                'online_users': list(connected_users.keys()),
+                'action': 'user_offline'
+            }, broadcast=True)
+    
     session.clear()
     return redirect(url_for("index"))
 
@@ -366,8 +381,12 @@ def on_join_private_chat(data):
         
         # Send current online users for private chat
         all_users = [user[0] for user in User.query.with_entities(User.username).all() if user[0] != username]
+        online_users = list(connected_users.keys())
+        
+        print(f"Sending private chat users - All: {len(all_users)}, Online: {len(online_users)}")
+        
         emit("private_chat_users", {
-            "online_users": list(connected_users.keys()),
+            "online_users": online_users,
             "all_users": all_users
         }, to=request.sid)
 
@@ -403,6 +422,8 @@ def handle_private_message(data):
             "message_id": pm.id
         }
         
+        print(f"Private message saved. Sender: {sender}, Receiver: {receiver}, Message ID: {pm.id}")
+        
         # Send only to the sender and receiver
         if sender in connected_users:
             for sid in connected_users[sender]:
@@ -413,7 +434,7 @@ def handle_private_message(data):
             for sid in connected_users[receiver]:
                 emit("new_private_message", payload, room=sid)
         
-        print(f"Private message saved. Sender: {sender}, Receiver: {receiver}")
+        print(f"Private message delivered to relevant users")
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5001))

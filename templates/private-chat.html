@@ -325,6 +325,20 @@
       font-size: 0.7rem;
       margin-left: 8px;
     }
+
+    .loading-spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--accent-color);
+    }
+
+    .loading-spinner i {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -398,9 +412,11 @@
 
     // Load all users from server
     function loadAllUsers() {
+      console.log('Loading all users...');
       fetch('/get_all_users')
         .then(response => response.json())
         .then(data => {
+          console.log('Users loaded:', data);
           allUsers = data.all_users || [];
           onlineUsers = data.online_users || [];
           updateUserLists();
@@ -465,6 +481,7 @@
     function createUserElement(username, isOnline) {
       const userElement = document.createElement('div');
       userElement.className = `user ${selectedUser === username ? 'active' : ''}`;
+      userElement.setAttribute('data-username', username);
       const initials = username.charAt(0).toUpperCase();
       userElement.innerHTML = `
         <div class="user-avatar" style="background: ${getUserColor(username)};">${initials}</div>
@@ -488,36 +505,58 @@
       return colors[index];
     }
 
-    // Select user for private chat
+    // Select user for private chat - COMPLETELY REWRITTEN
     function selectUser(username, isOnline) {
+      console.log(`=== SELECT USER CALLED ===`);
+      console.log(`Selecting user: ${username}`);
+      console.log(`Previous selected user: ${selectedUser}`);
+      console.log(`Is online: ${isOnline}`);
+      
       // If clicking the same user, do nothing
       if (selectedUser === username) {
+        console.log('Same user clicked, doing nothing');
         return;
       }
       
+      // Update the selected user
       selectedUser = username;
       selectedUserOnline = isOnline;
       
-      // Update UI
+      console.log(`Updated selectedUser to: ${selectedUser}`);
+      
+      // Update UI - Remove active class from all users
       document.querySelectorAll('.user').forEach(user => {
         user.classList.remove('active');
       });
       
-      // Find and activate the selected user
-      const userElements = document.querySelectorAll('.user');
-      userElements.forEach(user => {
-        if (user.querySelector('.user-username').textContent === username) {
-          user.classList.add('active');
-        }
-      });
+      // Add active class to selected user
+      const selectedUserElement = document.querySelector(`[data-username="${username}"]`);
+      if (selectedUserElement) {
+        selectedUserElement.classList.add('active');
+        console.log(`Added active class to user: ${username}`);
+      } else {
+        console.error(`Could not find user element for: ${username}`);
+      }
       
+      // Update chat header
       updateChatHeader();
+      
+      // Hide no chat selected message
       document.getElementById('noChatSelected').style.display = 'none';
+      
+      // Show chat input
       document.getElementById('chatInput').style.display = 'flex';
       
-      // Clear the current messages and load chat history for the new user
+      // Clear messages immediately and show loading
       const messagesContainer = document.getElementById('messages');
-      messagesContainer.innerHTML = '<div class="no-chat-selected"><i class="fas fa-spinner fa-spin"></i><h4>Loading messages...</h4></div>';
+      messagesContainer.innerHTML = `
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <h4>Loading messages with ${username}...</h4>
+        </div>
+      `;
+      
+      console.log(`Cleared messages and showing loading spinner for: ${username}`);
       
       // Load chat history for the newly selected user
       loadChatHistory(username);
@@ -525,6 +564,7 @@
       // Focus on input
       setTimeout(() => {
         document.getElementById('messageInput').focus();
+        console.log(`Focused on message input for: ${username}`);
       }, 100);
     }
 
@@ -535,27 +575,56 @@
       const statusIcon = document.getElementById('statusIcon');
       const statusText = document.getElementById('statusText');
       
-      chatTitle.textContent = `Private chat with ${selectedUser}`;
-      chatStatus.style.display = 'flex';
-      
-      if (selectedUserOnline) {
-        statusIcon.className = 'fas fa-circle me-1';
-        statusIcon.style.color = 'var(--secondary-color)';
-        statusText.textContent = 'Online';
-        statusText.style.color = 'var(--secondary-color)';
-      } else {
-        statusIcon.className = 'fas fa-circle me-1';
-        statusIcon.style.color = '#666';
-        statusText.textContent = 'Offline';
-        statusText.style.color = '#666';
+      if (selectedUser) {
+        chatTitle.textContent = `Private chat with ${selectedUser}`;
+        chatStatus.style.display = 'flex';
+        
+        if (selectedUserOnline) {
+          statusIcon.className = 'fas fa-circle me-1';
+          statusIcon.style.color = 'var(--secondary-color)';
+          statusText.textContent = 'Online';
+          statusText.style.color = 'var(--secondary-color)';
+        } else {
+          statusIcon.className = 'fas fa-circle me-1';
+          statusIcon.style.color = '#666';
+          statusText.textContent = 'Offline';
+          statusText.style.color = '#666';
+        }
+        
+        console.log(`Updated chat header for: ${selectedUser}`);
       }
     }
 
     // Load chat history with selected user
     function loadChatHistory(otherUser) {
+      console.log(`=== LOAD CHAT HISTORY CALLED ===`);
+      console.log(`Loading chat history for: ${otherUser}`);
+      console.log(`Current selectedUser: ${selectedUser}`);
+      
+      // Verify we're still loading for the correct user
+      if (otherUser !== selectedUser) {
+        console.warn(`User changed during load! Requested: ${otherUser}, Current: ${selectedUser}`);
+        return;
+      }
+      
       fetch(`/get_private_messages/${otherUser}`)
-        .then(response => response.json())
+        .then(response => {
+          console.log(`Response status: ${response.status}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(data => {
+          console.log(`Loaded ${data.messages ? data.messages.length : 0} messages for ${otherUser}`);
+          console.log(`Current selectedUser after loading: ${selectedUser}`);
+          
+          // Double-check that we're still showing the correct user
+          if (otherUser !== selectedUser) {
+            console.warn(`User changed after loading! Loaded for: ${otherUser}, Current: ${selectedUser}`);
+            return;
+          }
+          
           const messagesContainer = document.getElementById('messages');
           messagesContainer.innerHTML = '';
           
@@ -564,6 +633,7 @@
               addMessageToChat(msg.sender, msg.content, msg.sender === currentUser);
             });
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            console.log(`Displayed ${data.messages.length} messages for ${otherUser}`);
           } else {
             messagesContainer.innerHTML = `
               <div class="no-chat-selected">
@@ -572,6 +642,7 @@
                 <p>Start a conversation with ${otherUser}</p>
               </div>
             `;
+            console.log(`No messages found for ${otherUser}`);
           }
         })
         .catch(error => {
@@ -587,32 +658,13 @@
         });
     }
 
-    // Send private message
-    function sendPrivateMessage() {
-      if (!selectedUser) return;
-      
-      const input = document.getElementById('messageInput');
-      const message = input.value.trim();
-      
-      if (message) {
-        socket.emit('private_message', {
-          sender: currentUser,
-          receiver: selectedUser,
-          msg: message
-        });
-        
-        // Only add to chat if not already added by the server response
-        // This prevents duplicate messages
-        input.value = '';
-      }
-    }
-
     // Add message to chat
     function addMessageToChat(sender, message, isSent) {
       const messagesContainer = document.getElementById('messages');
       
-      // Remove no messages placeholder if it exists
-      if (messagesContainer.querySelector('.no-chat-selected')) {
+      // Remove loading spinner or no messages placeholder if they exist
+      if (messagesContainer.querySelector('.loading-spinner') || 
+          messagesContainer.querySelector('.no-chat-selected')) {
         messagesContainer.innerHTML = '';
       }
       
@@ -634,6 +686,29 @@
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    // Send private message
+    function sendPrivateMessage() {
+      if (!selectedUser) {
+        console.log('No user selected, cannot send message');
+        alert('Please select a user to chat with first');
+        return;
+      }
+      
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      
+      if (message) {
+        console.log(`Sending message to ${selectedUser}: ${message}`);
+        socket.emit('private_message', {
+          sender: currentUser,
+          receiver: selectedUser,
+          msg: message
+        });
+        
+        input.value = '';
+      }
+    }
+
     // Show notification for new messages
     function showNotification(sender, message) {
       if ("Notification" in window && Notification.permission === "granted") {
@@ -646,29 +721,38 @@
 
     // Socket event handlers
     socket.on('private_chat_users', function(data) {
+      console.log('Received private chat users:', data);
       allUsers = data.all_users || [];
       onlineUsers = data.online_users || [];
       updateUserLists();
     });
 
     socket.on('user_list_update', function(data) {
+      console.log('User list updated:', data);
       onlineUsers = data.online_users || [];
       updateUserLists();
     });
 
     socket.on('new_private_message', function(data) {
-      // Only display if this message is relevant to the current chat
+      console.log('New private message received:', data);
+      
+      // Only display if this message is relevant to the CURRENTLY SELECTED chat
       const isMessageForCurrentChat = 
           (data.sender === selectedUser && data.receiver === currentUser) || 
           (data.receiver === selectedUser && data.sender === currentUser);
       
-      if (isMessageForCurrentChat) {
+      if (isMessageForCurrentChat && selectedUser) {
+          console.log('Adding message to current chat with:', selectedUser);
           addMessageToChat(data.sender, data.msg, data.sender === currentUser);
       }
       
       // Show notification for new messages not in current chat
       else if (data.receiver === currentUser && data.sender !== selectedUser) {
+          console.log('Showing notification for message from:', data.sender);
           showNotification(data.sender, data.msg);
+          
+          // Update the user list to show there's a new message
+          updateUserLists();
       }
     });
 
@@ -683,6 +767,7 @@
 
     // Load users when page loads
     document.addEventListener('DOMContentLoaded', function() {
+      console.log('Private chat page loaded for user:', currentUser);
       loadAllUsers();
       
       // Request notification permission
@@ -690,6 +775,16 @@
           Notification.requestPermission();
       }
     });
+
+    // Debug function to check current state
+    window.debugState = function() {
+      console.log('=== DEBUG STATE ===');
+      console.log('Current user:', currentUser);
+      console.log('Selected user:', selectedUser);
+      console.log('All users:', allUsers);
+      console.log('Online users:', onlineUsers);
+      console.log('Messages container children:', document.getElementById('messages').children.length);
+    };
   </script>
 </body>
 </html>
